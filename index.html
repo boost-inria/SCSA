@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Semi-Classical Signal Analysis</title>
+<meta name="description" content="SCSA represents a signal as the spectral density of a Schrodinger operator. Interactive demos for reconstruction, denoising, characterisation and images.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+<nav class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top">SCSA<em>.</em></a>
+    <a class="lnk" href="#recon">Reconstruction</a>
+    <a class="lnk" href="#denoise">Denoising</a>
+    <a class="lnk" href="#charac">Characterisation</a>
+    <a class="lnk" href="#images">Images</a>
+    <a class="lnk" href="#method">Method</a>
+    <a class="lnk" href="#software">Software</a>
+    <a class="lnk" href="#people">People</a>
+  </div>
+</nav>
+<div id="top"></div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Semi-Classical Signal Analysis</div>
+    <h1>A signal, read as the <em>spectrum</em> of a Schrödinger operator.</h1>
+    <p class="lede">SCSA treats a positive signal as a <b>potential well</b>, solves the quantum
+      eigenvalue problem that well defines, and rebuilds the signal from the squared eigenfunctions
+      that fall out. Sharp, localised features need very few components — the components are
+      pulse-shaped themselves, and they come from the signal rather than from a fixed dictionary.</p>
+    <div class="hero-formula">
+      <span class="eq">y<sub>h</sub>(x) = 4h ∑<sub>n=1</sub><sup>N<sub>h</sub></sup> κ<sub>n</sub> ψ<sub>n</sub>(x)²</span>
+      <span class="cap">one parameter · h</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============ 1. RECONSTRUCTION ============ -->
+<section id="recon">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">01 · Reconstruction</span>
+      <h2>Rebuilding a clean signal</h2>
+      <p class="sec-sub">With no noise present, <em>h</em> is a pure resolution dial. Lower it and the
+        well deepens, more bound states appear, and the reconstruction converges on the signal.
+        Every curve below was computed with pyscsa.</p>
+    </div>
+    <div class="instrument">
+      <div class="ibar">
+        <div class="grp" id="rBtns" role="group" aria-label="signal"><span class="glab">Signal</span></div>
+        <div class="ctl">
+          <label for="rH">h</label>
+          <input class="slider" id="rH" type="range" min="0" max="19" value="11" step="1">
+          <span class="val" id="rHv">—</span>
+        </div>
+      </div>
+      <div class="panels">
+        <div class="ptitle">
+          <span class="nm">Signal and reconstruction</span>
+          <span class="legend">
+            <span class="lg"><span class="sw" style="background:#7C8DA3"></span>signal</span>
+            <span class="lg"><span class="sw" style="background:#FF8A4C"></span>SCSA</span>
+          </span>
+        </div>
+        <div class="cwrap"><canvas id="rMain" height="260"></canvas></div>
+        <div class="duo">
+          <div>
+            <div class="ptitle"><span class="nm">The well and its bound states</span></div>
+            <div class="cwrap"><canvas id="rWell" height="205"></canvas></div>
+          </div>
+          <div>
+            <div class="ptitle"><span class="nm">Components · 4h κ<sub>n</sub> ψ<sub>n</sub>²</span>
+              <span class="lg" id="rCn">—</span></div>
+            <div class="cwrap"><canvas id="rComp" height="205"></canvas></div>
+          </div>
+        </div>
+      </div>
+      <div class="readouts">
+        <div class="ro"><span class="k">h</span><span class="v" id="rOh">—</span></div>
+        <div class="ro"><span class="k">Components N<sub>h</sub></span><span class="v" id="rOn">—</span></div>
+        <div class="ro hl"><span class="k">Reconstruction error</span><span class="v" id="rOe">—</span></div>
+        <div class="ro"><span class="k">Largest κ<sub>n</sub></span><span class="v" id="rOk">—</span></div>
+      </div>
+      <div class="inote" id="rNote">—</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2. DENOISING ============ -->
+<section id="denoise">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">02 · Noise filtering</span>
+      <h2>Where SCSA stops describing signal and starts describing noise</h2>
+      <p class="sec-sub">Add noise and <em>h</em> stops being a resolution dial and becomes a
+        judgement. The lower panel splits the error against the noisy measurement from the error
+        against the clean truth: the first keeps falling, the second turns back up. <b>C-SCSA</b>
+        finds that turning point from the noisy signal alone.</p>
+    </div>
+    <div class="instrument">
+      <div class="ibar">
+        <div class="grp" id="dBtns" role="group" aria-label="signal"><span class="glab">Signal</span></div>
+        <div class="grp" id="dLv" role="group" aria-label="noise level"><span class="glab">SNR</span></div>
+        <div class="ctl">
+          <label for="dH">h</label>
+          <input class="slider" id="dH" type="range" min="0" max="19" value="11" step="1">
+          <span class="val" id="dHv">—</span>
+        </div>
+        <button class="pbtn act" id="dAuto">Let C-SCSA choose h</button>
+      </div>
+      <div class="panels">
+        <div class="ptitle">
+          <span class="nm">Noisy measurement, truth and reconstruction</span>
+          <span class="legend">
+            <span class="lg"><span class="sw" style="background:#7C8DA3"></span>noisy</span>
+            <span class="lg"><span class="sw dash" style="color:#C9D4E0"></span>clean truth</span>
+            <span class="lg"><span class="sw" style="background:#FF8A4C"></span>SCSA</span>
+          </span>
+        </div>
+        <div class="cwrap"><canvas id="dMain" height="260"></canvas></div>
+        <div class="ptitle">
+          <span class="nm">Error against h</span>
+          <span class="legend">
+            <span class="lg"><span class="sw" style="background:#7C8DA3"></span>vs noisy</span>
+            <span class="lg"><span class="sw" style="background:#67E3A0"></span>vs truth</span>
+            <span class="lg"><span class="sw" style="background:#57C4F5"></span>C-SCSA pick</span>
+          </span>
+        </div>
+        <div class="cwrap"><canvas id="dSweep" height="215"></canvas></div>
+      </div>
+      <div class="readouts">
+        <div class="ro"><span class="k">h</span><span class="v" id="dOh">—</span></div>
+        <div class="ro"><span class="k">Error vs noisy</span><span class="v" id="dOo">—</span></div>
+        <div class="ro hl"><span class="k">Error vs truth</span><span class="v" id="dOt">—</span></div>
+        <div class="ro"><span class="k">C-SCSA picks</span><span class="v" id="dOc">—</span></div>
+        <div class="ro"><span class="k">Status</span><span class="v" style="font-size:.95rem"><span class="flag idle" id="dFlag">—</span></span></div>
+      </div>
+      <div class="inote" id="dNote">—</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. CHARACTERISATION ============ -->
+<section id="charac">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">03 · Characterisation</span>
+      <h2>The spectrum as a feature vector</h2>
+      <p class="sec-sub">Reconstruction is only half of what SCSA offers. The κ spectrum itself
+        describes the signal: how many components it needs, how the energy is distributed among them,
+        and the invariants INV<sub>m</sub> = 4h ∑ κ<sub>n</sub><sup>m</sup> built from them. INV₁
+        approximates the signal's integral, and the higher moments weight the dominant components
+        more heavily.</p>
+    </div>
+    <div class="instrument">
+      <div class="ibar">
+        <div class="grp" id="cBtns" role="group" aria-label="signal"><span class="glab">Signal</span></div>
+        <div class="ctl">
+          <label for="cH">h</label>
+          <input class="slider" id="cH" type="range" min="0" max="19" value="11" step="1">
+          <span class="val" id="cHv">—</span>
+        </div>
+      </div>
+      <div class="panels">
+        <div class="duo">
+          <div>
+            <div class="ptitle"><span class="nm">κ spectrum at this h</span></div>
+            <div class="cwrap"><canvas id="cKap" height="215"></canvas></div>
+          </div>
+          <div>
+            <div class="ptitle"><span class="nm">Invariants against h</span>
+              <span class="legend">
+                <span class="lg"><span class="sw" style="background:#57C4F5"></span>INV₁</span>
+                <span class="lg"><span class="sw dash" style="color:#76889C"></span>∫y dx</span>
+              </span></div>
+            <div class="cwrap"><canvas id="cInv" height="215"></canvas></div>
+          </div>
+        </div>
+      </div>
+      <div class="readouts">
+        <div class="ro"><span class="k">h</span><span class="v" id="cOh">—</span></div>
+        <div class="ro"><span class="k">N<sub>h</sub></span><span class="v" id="cOn">—</span></div>
+        <div class="ro hl"><span class="k">INV₁ = 4h ∑κ<sub>n</sub></span><span class="v" id="cO1">—</span></div>
+        <div class="ro"><span class="k">∫ y dx</span><span class="v" id="cOa">—</span></div>
+        <div class="ro"><span class="k">INV₂</span><span class="v" id="cO2">—</span></div>
+      </div>
+      <div class="inote" id="cNote">—</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. IMAGES ============ -->
+<section id="images">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">04 · Two dimensions</span>
+      <h2>Images</h2>
+      <p class="sec-sub">The construction carries over to two dimensions through the 2-D Schrödinger
+        operator, applied to a synthetic phantom with sharp edges and smooth interiors. The same
+        trade-off governs it: smaller <em>h</em> means more eigenfunctions and a closer copy.</p>
+    </div>
+    <div class="instrument">
+      <div class="ibar">
+        <div class="ctl">
+          <label for="iH">h</label>
+          <input class="slider" id="iH" type="range" min="0" max="4" value="1" step="1">
+          <span class="val" id="iHv">—</span>
+        </div>
+      </div>
+      <div class="imgrow">
+        <div class="imgbox"><img id="iOrig" alt="original phantom"><span class="cap">original</span></div>
+        <div class="imgbox"><img id="iRec" alt="SCSA reconstruction"><span class="cap" id="iCap">reconstruction</span></div>
+      </div>
+      <div class="readouts">
+        <div class="ro"><span class="k">h</span><span class="v" id="iOh">—</span></div>
+        <div class="ro"><span class="k">Eigenfunctions used</span><span class="v" id="iOn">—</span></div>
+        <div class="ro hl"><span class="k">Reconstruction error</span><span class="v" id="iOe">—</span></div>
+        <div class="ro"><span class="k">Image size</span><span class="v" id="iOs">—</span></div>
+      </div>
+      <div class="inote">Computed at <b>γ = 2</b>, pyscsa's default for images, rather than the
+        γ = 1/2 used for the one-dimensional signals above. Sharp edges survive at moderate h because
+        the 2-D eigenfunctions localise around them, which is what makes the representation useful
+        for compression and feature extraction rather than only for smoothing.</div>
+    </div>
+
+    <div class="prov"><div><b>Provenance.</b> Every number and curve on this page was computed with
+      <code>pyscsa</code> (Fourier spectral operator, 96-point grid) and serialised to a data file
+      the page only displays — no re-implementation of the method in the browser. The C-SCSA panel
+      uses a corrected cost function; see the note in the repository.</div></div>
+  </div>
+</section>
+
+<!-- ============ METHOD ============ -->
+<section id="method">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">How it works</span>
+      <h2>Three steps, no dictionary</h2>
+      <p class="sec-sub">Fourier brings sine waves to the signal. Wavelets bring scaled bumps. SCSA
+        brings nothing — it asks the signal which shapes it already contains.</p>
+    </div>
+    <div class="steps">
+      <div class="step"><span class="n">STEP 1</span><h3>Turn the signal upside down</h3>
+        <p>Read the signal as a landscape and flip it: where the signal is large, the well is deep.
+          That well becomes the potential in a Schrödinger operator, scaled by <em>h</em>.</p></div>
+      <div class="step"><span class="n">STEP 2</span><h3>Find what the well can hold</h3>
+        <p>A well of finite depth holds finitely many bound states, each an eigenfunction ψ<sub>n</sub>
+          at an energy λ<sub>n</sub> below zero. Deeper well, more states.</p></div>
+      <div class="step"><span class="n">STEP 3</span><h3>Add the squares back up</h3>
+        <p>Square each eigenfunction, weight it by κ<sub>n</sub> = √(−λ<sub>n</sub>), and sum. The
+          result reconstructs the signal, and each term is a localised piece of it.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">The same idea, twice</span>
+      <h2>For the curious and for the specialist</h2></div>
+    <div class="tiers">
+      <div class="tier">
+        <span class="tier-tag plain">Without the mathematics</span>
+        <p class="pull">A sharp arterial pulse takes dozens of sine waves to describe, and three or
+          four SCSA components.</p>
+        <p>That difference is the argument. Sine waves are spread out and a pulse is not, so
+          describing one with the other is wasteful. SCSA's components are pulse-shaped because they
+          were derived from a pulse-shaped signal.</p>
+        <p>Because they come from the signal itself, they tend to carry meaning. In arterial blood
+          pressure the first component tracks the systolic peak and later ones pick up waves
+          reflected from the periphery — quantities a clinician can name.</p>
+        <p>One number, <em>h</em>, sets the level of detail, and choosing it is choosing what counts
+          as signal rather than noise.</p>
+      </div>
+      <div class="tier math">
+        <span class="tier-tag tech">With the mathematics</span>
+        <p>For a positive signal <em>y</em> ∈ L¹(ℝ) and semi-classical parameter <em>h</em> &gt; 0,
+          consider on L²(ℝ)</p>
+        <div class="eqblock">H<sub>h</sub>(y) = −h² d²/dx² − y(x)</div>
+        <p>with negative eigenvalues λ<sub>n</sub> = −κ<sub>n</sub>² and L²-normalised eigenfunctions
+          ψ<sub>n</sub>. For a Riesz order γ &gt; 0 and threshold λ, the reconstruction is</p>
+        <div class="eqblock">y<sub>h</sub>(x) = −λ + [ (h / L<sup>cl</sup><sub>γ</sub>) ∑<sub>n</sub> (λ − λ<sub>n</sub>)<sup>γ</sup> ψ<sub>n</sub>(x)² ]<sup>2/(1+2γ)</sup></div>
+        <p>with the classical constant L<sup>cl</sup><sub>γ</sub> = Γ(γ+1) / (2√π Γ(γ+3/2)).
+          In one dimension the standard choice is γ = 1/2 and λ = 0, where
+          L<sup>cl</sup><sub>1/2</sub> = 1/4 and the exponent becomes 1, so everything collapses to
+          the form in the header:</p>
+        <div class="eqblock">y<sub>h</sub>(x) = 4h ∑<sub>n=1</sub><sup>N<sub>h</sub></sup> κ<sub>n</sub> ψ<sub>n</sub>(x)²</div>
+        <p>The demos above use γ = 1/2 for the one-dimensional signals and γ = 2 for the images,
+          following pyscsa's defaults. Either way y<sub>h</sub> → y as h → 0, and the number of
+          components obeys the Weyl law N<sub>h</sub> ∼ (1/πh)∫√y dx — which is what the sliders are
+          really moving.</p>
+        <p>The weights are not a modelling choice. By Hellmann–Feynman,
+          δλ<sub>n</sub>/δy(x) = −ψ<sub>n</sub>(x)². Applying this to the Riesz mean
+          R<sub>3/2</sub> = ∑ κ<sub>n</sub>³ gives δR<sub>3/2</sub>/δy = (3/2) ∑ κ<sub>n</sub>
+          ψ<sub>n</sub>², which is the γ = 1/2 reconstruction up to scale — and 3/2 is the unique
+          Riesz order whose gradient returns weights linear in κ<sub>n</sub>. The formula is that
+          gradient: derived, not postulated. (The two orders are different objects — γ indexes the
+          reconstruction, 3/2 indexes the mean being differentiated.)</p>
+        <ul class="deflist">
+          <li><span class="sym">h</span><span class="txt">semi-classical parameter, sets resolution</span></li>
+          <li><span class="sym">κ<sub>n</sub></span><span class="txt">√(−λ<sub>n</sub>), n-th spectral weight</span></li>
+          <li><span class="sym">ψ<sub>n</sub></span><span class="txt">n-th bound state, normalised in L²</span></li>
+          <li><span class="sym">N<sub>h</sub></span><span class="txt">number of negative eigenvalues</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="apps">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">Where it is used</span><h2>Applications</h2></div>
+    <div class="apps">
+      <div class="app"><div class="tagline">Origin</div><h3>Arterial blood pressure</h3>
+        <p>Introduced to decompose pressure waveforms into soliton-like components, separating the
+          incident wave from its reflections and yielding physiologically meaningful indices.</p></div>
+      <div class="app"><div class="tagline">Neural signals</div><h3>EEG and spectroscopy</h3>
+        <p>Sparse representation of transient, non-stationary recordings, where sharp bursts are what
+          fixed dictionaries represent badly and adaptive components represent well.</p></div>
+      <div class="app"><div class="tagline">Restoration</div><h3>Denoising</h3>
+        <p>Choosing h — automatically, with C-SCSA — suppresses noise while preserving peak amplitude
+          and position, the features a low-pass filter tends to flatten.</p></div>
+      <div class="app"><div class="tagline">Two dimensions</div><h3>Image representation</h3>
+        <p>The 2-D operator gives a compact spectral representation for compression, denoising and
+          feature extraction — applied to brain MRI contrast enhancement and to carotid plaque
+          classification from CT.</p></div>
+      <div class="app"><div class="tagline">Outside biomedicine</div><h3>Turbomachinery</h3>
+        <p>Pressure signals in centrifugal compressors carry precursors of surge. The spectral
+          decomposition picks them out early enough to be useful as a warning.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="software">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">Code</span><h2>Software</h2>
+      <p class="sec-sub">Reference implementations, released under the MIT licence.</p></div>
+    <div class="sw-grid">
+      <div class="sw-card"><span class="lang">Python</span><h3>pyscsa</h3>
+        <p>The reference implementation: 1-D and 2-D SCSA on a Fourier spectral operator, C-SCSA
+          automatic parameter selection, denoising filters and quality metrics.</p>
+        <a href="https://github.com/boost-inria/pyscsa">Repository →</a></div>
+      <div class="sw-card"><span class="lang">Documentation</span><h3>Guide and API</h3>
+        <p>Installation, quickstart, the mathematical background and the full API reference.</p>
+        <a href="https://pyscsa.readthedocs.io">Read the docs →</a></div>
+      <div class="sw-card"><span class="lang">Install</span><h3>From PyPI</h3>
+        <p>Available as a package: <code style="font-family:var(--mono);font-size:.9em">pip install pyscsa</code>.
+          GPU support is included for larger images.</p>
+        <a href="https://pypi.org/project/pyscsa/">PyPI →</a></div>
+    </div>
+    <div class="todo"><b>To confirm:</b> whether the MATLAB and C++ implementations should also be
+      listed here, and where they live.</div>
+  </div>
+</section>
+
+<section id="people">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">People</span>
+      <h2>Collaborators</h2>
+      <p class="sec-sub">Everyone who has co-authored SCSA work, from the scattering-transform
+        papers of 2006 to the spectral theory and imaging results of today. Listed alphabetically,
+        with the strands each contributed to.</p>
+    </div>
+    <div class="people">
+      <div class="person"><span class="nm">Tareq Al-Naffouri</span><span class="ar">EEG classification</span></div>
+      <div class="person"><span class="nm">Mohamed Bahloul</span><span class="ar">pulse wave velocity</span></div>
+      <div class="person"><span class="nm">Farid Bakir</span><span class="ar">turbomachinery</span></div>
+      <div class="person"><span class="nm">Sourav Bhaduri</span><span class="ar">spectroscopy</span></div>
+      <div class="person"><span class="nm">Abderrazak Chahid</span><span class="ar">feature generation</span></div>
+      <div class="person"><span class="nm">François Cottin</span><span class="ar">arterial pressure</span></div>
+      <div class="person"><span class="nm">Emmanuelle Crépeau</span><span class="ar">foundations · scattering transform</span></div>
+      <div class="person"><span class="nm">Jean-Michel Davaine</span><span class="ar">carotid imaging</span></div>
+      <div class="person"><span class="nm">Michaël Deligant</span><span class="ar">turbomachinery</span></div>
+      <div class="person"><span class="nm">Maria de los Angeles Gomez</span><span class="ar">spectroscopy</span></div>
+      <div class="person"><span class="nm">Guillaume Goudot</span><span class="ar">carotid imaging</span></div>
+      <div class="person"><span class="nm">Abdelbaki Guir</span><span class="ar">spectral theory</span></div>
+      <div class="person"><span class="nm">Bernard Helffer</span><span class="ar">foundations · semi-classical analysis</span></div>
+      <div class="person"><span class="nm">Zineb Kaisserli</span><span class="ar">image reconstruction</span></div>
+      <div class="person"><span class="nm">Sofiane Khelladi</span><span class="ar">turbomachinery</span></div>
+      <div class="person"><span class="nm">Da-Yan Liu</span><span class="ar">noise analysis · imaging</span></div>
+      <div class="person"><span class="nm">Claire Médigue</span><span class="ar">arterial pressure</span></div>
+      <div class="person"><span class="nm">Maria Sara Nour Sadoun</span><span class="ar">EEG · optimisation</span></div>
+      <div class="person"><span class="nm">Yves Papelier</span><span class="ar">arterial pressure</span></div>
+      <div class="person"><span class="nm">Michaël Pereira</span><span class="ar">turbomachinery</span></div>
+      <div class="person"><span class="nm">Alix Piedelievre</span><span class="ar">carotid imaging</span></div>
+      <div class="person"><span class="nm">Evangelos Piliouras</span><span class="ar">pulse wave velocity · optimisation</span></div>
+      <div class="person"><span class="nm">Muhammad Mahboob Ur Rahman</span><span class="ar">EEG classification</span></div>
+      <div class="person"><span class="nm">Hacene Serrai</span><span class="ar">spectroscopy</span></div>
+      <div class="person"><span class="nm">Michel Sorine</span><span class="ar">foundations · scattering transform</span></div>
+      <div class="person"><span class="nm">Andry van de Louw</span><span class="ar">clinical validation</span></div>
+      <div class="person"><span class="nm">Juan Manuel Vargas Garcia</span><span class="ar">imaging · pulse wave velocity</span></div>
+      <div class="person"><span class="nm">Louise Wang</span><span class="ar">carotid imaging</span></div>
+      <div class="person"><span class="nm">Qinghua Zhang</span><span class="ar">scattering transform</span></div>
+    </div>
+    <div class="todo"><b>Affiliations not included.</b> I've listed names and contribution areas
+      only, drawn from the papers themselves — I didn't want to guess institutions. Send me the
+      affiliations and I'll add them, and tell me if anyone is missing or mis-attributed.</div>
+  </div>
+</section>
+
+
+
+<section id="papers-teaser">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">Research</span>
+      <h2>Selected publications</h2>
+      <p class="sec-sub">The papers that define the method. The full record, grouped by theme and
+        running from 2005 to the present, is on its own page.</p>
+    </div>
+    <div class="pub-group">
+      <div class="pub"><span class="t"><a href="https://dx.doi.org/10.1007/s00498-012-0091-1">Semi-classical signal analysis</a></span>
+        <span class="a">T.-M. Laleg-Kirati, E. Crépeau, M. Sorine</span>
+        <span class="v">Mathematics of Control, Signals, and Systems · 25(1), 37–61 · 2013</span></div>
+      <div class="pub"><span class="t"><a href="https://inria.hal.science/inria-00520773v2">On semi-classical questions related to signal analysis</a></span>
+        <span class="a">T.-M. Laleg-Kirati, B. Helffer</span>
+        <span class="v">Preprint · 2010</span></div>
+      <div class="pub"><span class="t"><a href="https://theses.hal.science/tel-00357309v1">Signal analysis based on semi-classical quantization: application to arterial blood pressure analysis</a></span>
+        <span class="a">T.-M. Laleg</span>
+        <span class="v">PhD thesis · Université de Versailles–Saint-Quentin-en-Yvelines · 2008</span></div>
+      <div class="pub"><span class="t"><a href="https://hal.science/hal-05659403v1">The variational structure of Riesz means</a></span>
+        <span class="a">A. Guir, T.-M. Laleg-Kirati</span>
+        <span class="v">Preprint · 2026 · the reconstruction formula as a functional gradient</span></div>
+    </div>
+    <p style="margin-top:22px"><a class="morelink" href="publications.html">All 26 SCSA publications →</a></p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div><div style="font-family:var(--serif);font-weight:600;color:var(--ink);font-size:1.02rem;margin-bottom:5px">Semi-Classical Signal Analysis</div>
+      <div>Maintained by T.-M. Laleg-Kirati and the BOOST team, Inria.</div></div>
+    <div><a href="https://github.com/boost-inria/pyscsa">github.com/boost-inria/pyscsa</a><br>
+      <span style="font-size:.82rem">Code under MIT licence.</span></div>
+  </div>
+</footer>
+<script src="data.js"></script>
+<script>
+(function(){
+  "use strict";
+  var D=window.SCSA_DATA;
+  var $=function(i){return document.getElementById(i);};
+  var PANEL={bg:"#0A0F17",grid:"#1A2532",axis:"#2A3949",text:"#76889C"};
+  var COMP=["--c1","--c2","--c3","--c4","--c5","--c6"];
+  function cv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+  if(!D){return;}
+
+  function setup(el,hCss){
+    var dpr=Math.min(window.devicePixelRatio||1,2);
+    var w=Math.max(el.parentElement.clientWidth,200);
+    el.width=Math.round(w*dpr); el.height=Math.round(hCss*dpr);
+    el.style.height=hCss+"px";
+    var c=el.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0);
+    c.fillStyle=PANEL.bg; c.fillRect(0,0,w,hCss);
+    return {c:c,w:w,h:hCss};
+  }
+  function frame(c,w,h,P,xr,yr,xlab,ylab,yfmt,xfmt,xlog){
+    c.strokeStyle=PANEL.grid; c.lineWidth=1;
+    c.fillStyle=PANEL.text; c.font='400 10px "IBM Plex Mono",monospace';
+    c.textAlign="right"; c.textBaseline="middle";
+    for(var k=0;k<=3;k++){
+      var v=yr[0]+(yr[1]-yr[0])*k/3;
+      var yy=Math.round(h-P.b-(v-yr[0])/(yr[1]-yr[0])*(h-P.t-P.b))+0.5;
+      c.beginPath(); c.moveTo(P.l,yy); c.lineTo(w-P.r,yy); c.stroke();
+      c.fillText(yfmt?yfmt(v):(Math.abs(v)>=10?v.toFixed(0):v.toFixed(1)),P.l-7,yy);
+    }
+    c.strokeStyle=PANEL.axis; c.beginPath();
+    c.moveTo(P.l+0.5,P.t); c.lineTo(P.l+0.5,h-P.b+0.5); c.lineTo(w-P.r,h-P.b+0.5); c.stroke();
+    c.textAlign="center"; c.textBaseline="top";
+    for(k=0;k<=3;k++){
+      var t=k/3, vx;
+      if(xlog){ vx=xr[0]*Math.pow(xr[1]/xr[0],t); } else { vx=xr[0]+(xr[1]-xr[0])*t; }
+      c.fillText(xfmt?xfmt(vx):(Math.abs(xr[1]-xr[0])<3?vx.toFixed(2):vx.toFixed(1)),
+                 P.l+t*(w-P.r-P.l),h-P.b+7);
+    }
+    c.textAlign="right"; c.fillText(xlab,w-P.r,h-P.b+20);
+    c.save(); c.translate(11,P.t); c.rotate(-Math.PI/2);
+    c.textAlign="right"; c.textBaseline="top"; c.fillText(ylab,0,0); c.restore();
+  }
+  function mapx(v,xr,L,R,xlog){
+    return xlog ? L+Math.log(v/xr[0])/Math.log(xr[1]/xr[0])*(R-L)
+                : L+(v-xr[0])/(xr[1]-xr[0])*(R-L);
+  }
+  function line(g,P,xs,ys,xr,yr,col,lw,dash,fill,xlog){
+    var L=P.l,R=g.w-P.r,T=P.t,B=g.h-P.b,c=g.c,i,X,Y;
+    c.save(); c.beginPath();
+    for(i=0;i<xs.length;i++){
+      X=mapx(xs[i],xr,L,R,xlog); Y=B-(ys[i]-yr[0])/(yr[1]-yr[0])*(B-T);
+      i?c.lineTo(X,Y):c.moveTo(X,Y);
+    }
+    if(fill){
+      c.lineTo(mapx(xs[xs.length-1],xr,L,R,xlog),B);
+      c.lineTo(mapx(xs[0],xr,L,R,xlog),B); c.closePath();
+      c.fillStyle=fill; c.fill(); c.beginPath();
+      for(i=0;i<xs.length;i++){
+        X=mapx(xs[i],xr,L,R,xlog); Y=B-(ys[i]-yr[0])/(yr[1]-yr[0])*(B-T);
+        i?c.lineTo(X,Y):c.moveTo(X,Y);
+      }
+    }
+    c.strokeStyle=col; c.lineWidth=lw; c.lineJoin="round"; c.lineCap="round";
+    if(dash)c.setLineDash(dash);
+    c.stroke(); c.restore();
+  }
+  function vline(g,P,x,xr,col,lab,xlog){
+    var L=P.l,R=g.w-P.r,T=P.t,B=g.h-P.b,c=g.c;
+    var X=mapx(x,xr,L,R,xlog);
+    c.save(); c.strokeStyle=col; c.lineWidth=1.4; c.setLineDash([4,3]);
+    c.beginPath(); c.moveTo(X,T); c.lineTo(X,B); c.stroke(); c.setLineDash([]);
+    if(lab){ c.fillStyle=col; c.font='500 9.5px "IBM Plex Mono",monospace';
+      c.textAlign=X>(L+R)/2?"right":"left"; c.textBaseline="top";
+      c.fillText(lab,X+(X>(L+R)/2?-6:6),T+2); }
+    c.restore();
+  }
+  function mkBtns(host,keys,labels,onPick){
+    keys.forEach(function(k,i){
+      var b=document.createElement("button");
+      b.className="pbtn"; b.textContent=labels[i];
+      b.setAttribute("aria-pressed",i===0?"true":"false");
+      b.addEventListener("click",function(){
+        host.querySelectorAll(".pbtn").forEach(function(o){o.setAttribute("aria-pressed","false");});
+        b.setAttribute("aria-pressed","true"); onPick(k);
+      });
+      host.appendChild(b);
+    });
+  }
+  function pct(v){return (v*100).toFixed(1)+"<small>%</small>";}
+
+  /* ---------------- 1. reconstruction ---------------- */
+  (function(){
+    var keys=Object.keys(D.recon), cur=keys[0];
+    mkBtns($("rBtns"),keys,keys.map(function(k){return D.recon[k].label;}),
+           function(k){cur=k;draw();});
+    $("rH").addEventListener("input",draw);
+    function draw(){
+      var S=D.recon[cur], i=+$("rH").value, F=S.frames[i], N=S.x.length;
+      $("rHv").textContent=F.h.toFixed(3); $("rOh").textContent=F.h.toFixed(3);
+      $("rOn").textContent=F.nh; $("rOe").innerHTML=pct(F.err);
+      $("rOk").textContent=F.kap.length?F.kap[0].toFixed(3):"—";
+      $("rCn").textContent=F.comps.length+(F.nh>F.comps.length?" of "+F.nh+" shown":" components");
+      var xr=[S.x[0],S.x[N-1]],ym=0,j;
+      for(j=0;j<N;j++){ if(S.y[j]>ym)ym=S.y[j]; if(F.recon[j]>ym)ym=F.recon[j]; }
+      var P={l:48,r:14,t:12,b:30}, g=setup($("rMain"),260), yr=[0,ym*1.1||1];
+      frame(g.c,g.w,g.h,P,xr,yr,S.xlab,S.ylab);
+      line(g,P,S.x,S.y,xr,yr,"#7C8DA3",1.4);
+      line(g,P,S.x,F.recon,xr,yr,"#FF8A4C",2.3);
+
+      var depth=ym, wr=[-depth*1.08,depth*0.12];
+      g=setup($("rWell"),205); frame(g.c,g.w,g.h,P,xr,wr,S.xlab,"energy");
+      var neg=S.y.map(function(v){return -v;});
+      line(g,P,S.x,neg,xr,wr,"#39506B",1.6,null,"rgba(57,80,107,.28)");
+      var L=P.l,R=g.w-P.r,T=P.t,B=g.h-P.b;
+      g.c.font='400 9.5px "IBM Plex Mono",monospace';
+      for(var n=0;n<F.lam.length;n++){
+        var lam=F.lam[n]; if(lam<wr[0])continue;
+        var Y=B-(lam-wr[0])/(wr[1]-wr[0])*(B-T), i0=-1,i1=-1;
+        for(j=0;j<N;j++){ if(neg[j]<=lam){ if(i0<0)i0=j; i1=j; } }
+        if(i0<0){i0=0;i1=N-1;}
+        var X0=mapx(S.x[i0],xr,L,R),X1=mapx(S.x[i1],xr,L,R);
+        g.c.strokeStyle=cv(COMP[n%6]); g.c.lineWidth=n===0?2:1.3;
+        g.c.globalAlpha=n<6?1:.4;
+        g.c.beginPath(); g.c.moveTo(X0,Y); g.c.lineTo(X1,Y); g.c.stroke();
+        g.c.globalAlpha=1;
+        if(n<3&&X1-X0>46){ g.c.fillStyle=cv(COMP[n%6]); g.c.textAlign="left";
+          g.c.textBaseline="bottom"; g.c.fillText("λ"+(n+1)+" = "+lam.toFixed(2),X0+4,Y-2); }
+      }
+      var cm=0;
+      F.comps.forEach(function(cc){cc.forEach(function(v){if(v>cm)cm=v;});});
+      g=setup($("rComp"),205);
+      frame(g.c,g.w,g.h,P,xr,[0,cm*1.12||1],S.xlab,"component");
+      F.comps.forEach(function(cc,n){
+        line(g,P,S.x,cc,xr,[0,cm*1.12||1],cv(COMP[n%6]),n===0?2:1.4);
+      });
+      $("rNote").innerHTML= F.nh<=2
+        ? "<b>Coarse.</b> Only "+F.nh+" component"+(F.nh>1?"s":"")+" — SCSA gives the signal's gross shape and nothing else."
+        : F.err<0.01
+        ? "<b>Converged.</b> "+F.nh+" components reconstruct the signal to "+(F.err*100).toFixed(2)+"%. Notice how each component sits under a distinct feature of the signal."
+        : "<b>"+F.nh+" components, "+(F.err*100).toFixed(1)+"% error.</b> Each bound state in the well contributes one localised pulse to the sum.";
+    }
+    draw(); window.addEventListener("resize",function(){clearTimeout(window._r1);window._r1=setTimeout(draw,140);});
+  })();
+
+  /* ---------------- 2. denoising ---------------- */
+  (function(){
+    var keys=Object.keys(D.denoise), cur=keys[0], lvl="mid";
+    mkBtns($("dBtns"),keys,keys.map(function(k){return D.denoise[k].label;}),
+           function(k){cur=k;sync();draw();});
+    var lv=["low","mid","high"], lvLab=["20 dB","12 dB","6 dB"];
+    (function(){
+      lv.forEach(function(k,i){
+        var b=document.createElement("button");
+        b.className="pbtn"; b.textContent=lvLab[i];
+        b.setAttribute("aria-pressed",k===lvl?"true":"false");
+        b.addEventListener("click",function(){
+          $("dLv").querySelectorAll(".pbtn").forEach(function(o){o.setAttribute("aria-pressed","false");});
+          b.setAttribute("aria-pressed","true"); lvl=k; draw();
+        });
+        $("dLv").appendChild(b);
+      });
+    })();
+    function L(){return D.denoise[cur].levels[lvl];}
+    function sync(){}
+    $("dH").addEventListener("input",draw);
+    $("dAuto").addEventListener("click",function(){
+      var E=L(), best=0, bd=1e9;
+      E.frames.forEach(function(f,i){var d=Math.abs(f.h-E.cscsa_h); if(d<bd){bd=d;best=i;}});
+      $("dH").value=best; draw();
+    });
+    function draw(){
+      var S=D.denoise[cur], E=L(), i=+$("dH").value, F=E.frames[i], N=S.x.length;
+      $("dHv").textContent=F.h.toFixed(3); $("dOh").textContent=F.h.toFixed(3);
+      $("dOo").innerHTML=pct(F.eobs); $("dOt").innerHTML=pct(F.etru);
+      $("dOc").textContent=E.cscsa_h.toFixed(3);
+      var xr=[S.x[0],S.x[N-1]],ym=0,j;
+      for(j=0;j<N;j++){ if(E.noisy[j]>ym)ym=E.noisy[j]; if(F.recon[j]>ym)ym=F.recon[j]; }
+      var P={l:48,r:14,t:12,b:30}, g=setup($("dMain"),260), yr=[0,ym*1.1||1];
+      frame(g.c,g.w,g.h,P,xr,yr,S.xlab,S.ylab);
+      line(g,P,S.x,E.noisy,xr,yr,"#7C8DA3",1.2);
+      line(g,P,S.x,E.clean,xr,yr,"#C9D4E0",1.5,[5,4]);
+      line(g,P,S.x,F.recon,xr,yr,"#FF8A4C",2.3);
+
+      var hs=E.frames.map(function(f){return f.h;});
+      var eo=E.frames.map(function(f){return f.eobs;});
+      var et=E.frames.map(function(f){return f.etru;});
+      var em=0; eo.concat(et).forEach(function(v){if(v>em)em=v;});
+      var hr=[hs[0],hs[hs.length-1]];
+      g=setup($("dSweep"),215);
+      frame(g.c,g.w,g.h,P,hr,[0,em*1.12||1],"h","relative error",
+            function(v){return (v*100).toFixed(0)+"%";},
+            function(v){return v<0.1?v.toFixed(3):v.toFixed(2);},true);
+      line(g,P,hs,eo,hr,[0,em*1.12||1],"#7C8DA3",1.7,null,null,true);
+      line(g,P,hs,et,hr,[0,em*1.12||1],"#67E3A0",2.2,null,null,true);
+      var bi=0,bv=1e9; et.forEach(function(v,k){if(v<bv){bv=v;bi=k;}});
+      var Lx=P.l,Rx=g.w-P.r,Tt=P.t,Bb=g.h-P.b;
+      var BX=mapx(hs[bi],hr,Lx,Rx,true), BY=Bb-(bv-0)/(em*1.12)*(Bb-Tt);
+      g.c.fillStyle="#67E3A0"; g.c.beginPath(); g.c.arc(BX,BY,4,0,6.2832); g.c.fill();
+      g.c.font='500 9.5px "IBM Plex Mono",monospace';
+      g.c.textAlign=BX>(Lx+Rx)/2?"right":"left"; g.c.textBaseline="bottom";
+      g.c.fillText("best "+hs[bi].toFixed(3),BX+(BX>(Lx+Rx)/2?-7:7),BY-5);
+      vline(g,P,E.cscsa_h,hr,"#57C4F5","C-SCSA "+E.cscsa_h.toFixed(3),true);
+      vline(g,P,F.h,hr,"#FF8A4C",null,true);
+
+      var f=$("dFlag"), ratio=F.etru/bv;
+      if(F.h<hs[bi]*0.75){f.className="flag warn";f.textContent="fitting noise";}
+      else if(ratio<1.15){f.className="flag ok";f.textContent="well chosen";}
+      else {f.className="flag idle";f.textContent="over-smoothed";}
+
+      var n;
+      if(F.h<hs[bi]*0.75){
+        n="<b>Below the optimum.</b> The grey curve keeps falling — the reconstruction matches the "+
+          "measurement ever more closely — while the green curve rises, because what it is now "+
+          "matching is the noise.";
+      } else if(ratio<1.15){
+        n="<b>Near the optimum.</b> Error against the truth is "+(F.etru*100).toFixed(1)+"%, against "+
+          "a best achievable "+(bv*100).toFixed(1)+"%. C-SCSA picked h = "+E.cscsa_h.toFixed(3)+
+          " knowing only the noisy signal.";
+      } else {
+        n="<b>Over-smoothed.</b> Too few components: real structure is being discarded along with "+
+          "the noise.";
+      }
+      $("dNote").innerHTML=n;
+    }
+    draw(); window.addEventListener("resize",function(){clearTimeout(window._r2);window._r2=setTimeout(draw,140);});
+  })();
+
+  /* ---------------- 3. characterisation ---------------- */
+  (function(){
+    var keys=Object.keys(D.charac), cur=keys[0];
+    mkBtns($("cBtns"),keys,keys.map(function(k){return D.charac[k].label;}),
+           function(k){cur=k;draw();});
+    $("cH").addEventListener("input",draw);
+    function draw(){
+      var S=D.charac[cur], i=+$("cH").value, R=S.rows[i];
+      $("cHv").textContent=R.h.toFixed(3); $("cOh").textContent=R.h.toFixed(3);
+      $("cOn").textContent=R.nh;
+      $("cO1").textContent=R.inv1.toFixed(3); $("cOa").textContent=S.area.toFixed(3);
+      $("cO2").textContent=R.inv2.toFixed(2);
+      var P={l:48,r:14,t:12,b:30};
+      var g=setup($("cKap"),215), K=R.kap, km=0;
+      K.forEach(function(v){if(v>km)km=v;});
+      frame(g.c,g.w,g.h,P,[0.5,Math.max(K.length,6)+0.5],[0,km*1.15||1],"component n","κ",
+            null,function(v){return v.toFixed(0);});
+      var L=P.l,Rx=g.w-P.r,T=P.t,B=g.h-P.b;
+      K.forEach(function(v,n){
+        var X=L+((n+1)-0.5)/(Math.max(K.length,6))*(Rx-L);
+        var Y=B-v/(km*1.15)*(B-T);
+        g.c.strokeStyle=cv(COMP[n%6]); g.c.lineWidth=3; g.c.lineCap="round";
+        g.c.beginPath(); g.c.moveTo(X,B); g.c.lineTo(X,Y); g.c.stroke();
+        g.c.fillStyle=cv(COMP[n%6]); g.c.beginPath(); g.c.arc(X,Y,3.2,0,6.2832); g.c.fill();
+      });
+      var hs=S.rows.map(function(r){return r.h;});
+      var i1=S.rows.map(function(r){return r.inv1;});
+      var vm=S.area; i1.forEach(function(v){if(v>vm)vm=v;});
+      var hr=[hs[0],hs[hs.length-1]];
+      g=setup($("cInv"),215);
+      frame(g.c,g.w,g.h,P,hr,[0,vm*1.15],"h","invariant",null,
+            function(v){return v<0.1?v.toFixed(3):v.toFixed(2);},true);
+      line(g,P,hs,hs.map(function(){return S.area;}),hr,[0,vm*1.15],"#76889C",1.5,[5,4],null,true);
+      line(g,P,hs,i1,hr,[0,vm*1.15],"#57C4F5",2.2,null,null,true);
+      vline(g,P,R.h,hr,"#FF8A4C",null,true);
+      var dev=Math.abs(R.inv1-S.area)/S.area*100;
+      $("cNote").innerHTML="<b>INV₁ = "+R.inv1.toFixed(3)+" against ∫y dx = "+S.area.toFixed(3)+
+        "</b> — a "+dev.toFixed(1)+"% deviation at this h. The invariants converge on the signal's "+
+        "moments as h falls, which is what makes them usable as features: a short, fixed-length "+
+        "description of the signal that does not depend on where its peaks happen to sit.";
+    }
+    draw(); window.addEventListener("resize",function(){clearTimeout(window._r3);window._r3=setTimeout(draw,140);});
+  })();
+
+  /* ---------------- 4. images ---------------- */
+  (function(){
+    if(!D.images){return;}
+    var I=D.images;
+    $("iOrig").src=I.original;
+    $("iH").max=I.frames.length-1;
+    $("iOs").textContent=I.size+"×"+I.size;
+    $("iH").addEventListener("input",draw);
+    function draw(){
+      var F=I.frames[+$("iH").value];
+      $("iRec").src=F.img;
+      $("iHv").textContent=F.h.toFixed(2); $("iOh").textContent=F.h.toFixed(2);
+      $("iOn").textContent=F.nh.toLocaleString();
+      $("iOe").innerHTML=pct(F.err);
+      $("iCap").textContent="reconstruction · h = "+F.h.toFixed(2);
+    }
+    draw();
+  })();
+})();
+</script>
+</body>
+</html>
