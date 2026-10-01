@@ -29,6 +29,3 @@ To regenerate after a change to the method or the example signals, run
 The site has no build step and no external dependencies apart from Google Fonts;
 it is plain HTML, CSS and JavaScript served directly by GitHub Pages.
 
-## Licence
-
-Code under the MIT licence. See `LICENSE.md`.
